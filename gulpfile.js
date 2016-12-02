@@ -1,0 +1,51 @@
+const gulp = require('gulp');
+const babel = require('gulp-babel');
+const concat = require('gulp-concat');
+const uglify = require('gulp-uglify');
+const rename = require('gulp-rename');
+const sequence = require('gulp-sequence');
+const eslint = require('gulp-eslint');
+const iife = require('gulp-iife');
+const sourcemaps = require('gulp-sourcemaps');
+
+gulp.task('lint', () => {
+    // ESLint ignores files with "node_modules" paths.
+    // So, it's best to have gulp ignore the directory as well.
+    // Also, Be sure to return the stream from the task;
+    // Otherwise, the task may end before the stream has finished.
+    return gulp.src(['src/**/*.js'])
+        // eslint() attaches the lint output to the "eslint" property
+        // of the file object so it can be used by other modules.
+        .pipe(eslint())
+        // eslint.format() outputs the lint results to the console.
+        // Alternatively use eslint.formatEach() (see Docs).
+        .pipe(eslint.format())
+        // To have the process exit with an error code (1) on
+        // lint error, return the stream and pipe to failAfterError last.
+        .pipe(eslint.failAfterError());
+});
+
+gulp.task('default', function() {
+    gulp.watch('./src/**/*.js', ['build-and-minify']);
+});
+
+gulp.task('build-and-minify', function(cb) {
+    sequence('build', 'minify')(cb);
+});
+
+gulp.task('build', function () {
+    return gulp.src(['src/*.js', 'src/**/*.js'])
+        .pipe(sourcemaps.init())
+        .pipe(babel())
+        .pipe(concat('kyokumen.js'))
+        .pipe(iife())
+        .pipe(sourcemaps.write())
+        .pipe(gulp.dest('dist'));
+});
+
+gulp.task('minify', function () {
+    return gulp.src('dist/kyokumen.js')
+        .pipe(uglify())
+        .pipe(rename({extname: '.min.js'}))
+        .pipe(gulp.dest('dist'));
+});
